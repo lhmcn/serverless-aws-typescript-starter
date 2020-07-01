@@ -47,7 +47,7 @@ This is a pre-configured starter kit for AWS serverless developers.
 1. Clone this repo
 
    ```bash
-   git clone https://github.com/lhmcn/serverless-typescript-starter.git projectName
+   git clone https://github.com/lhmcn/serverless-aws-typescript-starter.git projectName
    ```
 
 2. Install dependencies
