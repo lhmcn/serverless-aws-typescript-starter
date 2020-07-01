@@ -1,0 +1,105 @@
+service: ${self:custom.projectName}-api
+
+# Create an optimized package for our functions
+package:
+  individually: true
+
+custom:
+  # Our stage is based on what is passed in when running serverless
+  # commands. Or fallsback to what we have set in the provider section.
+  stage: ${opt:stage, self:provider.stage}
+  # Name of the project, will be used in the service names
+  projectName: myProject
+  # Set the table name here so we can use it while testing locally
+  tableName: tbl-${self:custom.projectName}-${self:custom.stage}
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+  - serverless-webpack
+  - serverless-prune-plugin
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  apiGateway:
+    minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+  stage: dev
+  description: ${self:custom.projectName}
+  websocketsApiName: ${self:custom.projectName}-websocket-api
+  websocketsApiRouteSelectionExpression: $request.body.action
+  region: us-east-1
+  memorySize: 512
+  timeout: 3
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    tableName: ${self:custom.tableName}
+    # XXX_KEY: ${env:XXX_KEY} # Defined in .env
+  iamRoleStatements:
+    # Permissions for accessing DynamoDB
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - Fn::GetAtt: [ DynamoDBTable, Arn ]
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource:
+        Fn::Join:
+          - ''
+          -
+            - Fn::GetAtt: [ DynamoDBTable, Arn ]
+            - '/index/*'
+
+functions:
+  # HTTP Requests
+  showEvent:
+    handler: src/handlers/diagnosis.showEvent
+    events:
+      - http:
+          path: public/event
+          method: any
+          cors: true
+
+  # WebSocket Requests
+  connectionHandler:
+    handler: src/handlers/message.connectionHandler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+  defaultHandler:
+    handler: src/handlers/message.defaultHandler
+    events:
+      - websocket:
+          route: $default
+  ping:
+    handler: src/handlers/message.pingHandler
+    events:
+      - websocket:
+          route: ping
+          routeResponseSelectionExpression: $default
+
+resources:
+  # API Gateway Errors
+  - ${file(resources/api-gateway-errors.yml)}
+  # DynamoDB
+  - ${file(resources/dynamodb-table.yml)}
+  # S3
+  - ${file(resources/s3-bucket.yml)}
+  # Cognito
+  - ${file(resources/cognito-user-pool.yml)}
+  - ${file(resources/cognito-identity-pool.yml)}

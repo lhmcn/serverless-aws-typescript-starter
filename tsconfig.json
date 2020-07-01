@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "lib": ["es2017"],
+    "removeComments": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "module": "es6",
+    "target": "es6",
+    "outDir": ".build",
+    "inlineSources": true,
+    "esModuleInterop": true,
+    "sourceRoot": "/",
+    "baseUrl": "./",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@queries/*": ["queries/*"],
+      "@tests/*": ["tests/*"]
+    }
+  },
+  "include": ["./**/*.ts"],
+  "exclude": [
+    "node_modules/**/*",
+    ".serverless/**/*",
+    ".webpack/**/*",
+    "_warmup/**/*",
+    ".vscode/**/*"
+  ]
+}
