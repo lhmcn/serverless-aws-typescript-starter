@@ -21,12 +21,12 @@ Resources:
         Ref: CognitoIdentityPool
       Roles:
         authenticated:
-          Fn::GetAtt: [CognitoAuthRole, Arn]
+          Fn::GetAtt: [CognitoAuthorizedRole, Arn]
         unauthenticated:
-          Fn::GetAtt: [CognitoUnAuthorizedRole, Arn]
+          Fn::GetAtt: [CognitoVisitorRole, Arn]
 
   # IAM role used for authenticated users
-  CognitoAuthRole:
+  CognitoAuthorizedRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
@@ -84,7 +84,7 @@ Resources:
                         - '/*'
 
   # IAM role used for visitors
-  CognitoUnAuthorizedRole:
+  CognitoVisitorRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
