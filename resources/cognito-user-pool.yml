@@ -4,7 +4,7 @@ Resources:
     Properties:
       UserPoolName: ${self:custom.projectName}-user-pool-${self:custom.stage}
       AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true
+        AllowAdminCreateUserOnly: false
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
