@@ -16,25 +16,14 @@ Resources:
               - POST
               - DELETE
               - HEAD
-            MaxAge: 3000
-  AttachmentsBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket:
-        Ref: AttachmentsBucket
-      PolicyDocument:
-        Statement:
-          - Sid: PublicReadGetObject
-            Effect: Allow
-            Principal: '*'
-            Action:
-              - s3:GetObject
-            Resource:
-              - Fn::Join:
-                - ''
-                -
-                  - Fn::GetAtt: [AttachmentsBucket, Arn]
-                  - '/public/*'
+            MaxAge: 3600
+      # Delete tmp files after 1 day
+      LifecycleConfiguration:
+        Rules:
+          -
+            ExpirationInDays: 1
+            Prefix: 'public/tmp/'
+            Status: Enabled
 
 # Print out the name of the bucket that is created
 Outputs:

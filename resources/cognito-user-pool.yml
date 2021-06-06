@@ -1,5 +1,5 @@
 Resources:
-  CognitoUserPool:
+  CognitoUserPoolMainUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: ${self:custom.projectName}-user-pool-${self:custom.stage}
@@ -7,8 +7,14 @@ Resources:
         AllowAdminCreateUserOnly: false
       UsernameAttributes:
         - email
-      AutoVerifiedAttributes:
-        - email
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: "verified_email"
+            Priority: 1
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: false
       Policies:
         PasswordPolicy:
           MinimumLength: 6
@@ -22,16 +28,36 @@ Resources:
     Properties:
       ClientName: ${self:custom.projectName}-user-pool-client-${self:custom.stage}
       UserPoolId:
-        Ref: CognitoUserPool
+        Ref: CognitoUserPoolMainUserPool
       ExplicitAuthFlows:
         - ADMIN_NO_SRP_AUTH
       GenerateSecret: false
+
+  CognitoUserPoolGroupRoot:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: 'Root'
+      Precedence: 1
+      RoleArn:
+        Fn::GetAtt: [ CognitoRootRole, Arn ]
+      UserPoolId:
+        Ref: CognitoUserPoolMainUserPool
+
+  CognitoUserPoolGroupAdministrators:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: 'Administrators'
+      Precedence: 10
+      RoleArn:
+        Fn::GetAtt: [ CognitoAdminRole, Arn ]
+      UserPoolId:
+        Ref: CognitoUserPoolMainUserPool
 
 # Print out the Id of the User Pool that is created
 Outputs:
   UserPoolId:
     Value:
-      Ref: CognitoUserPool
+      Ref: CognitoUserPoolMainUserPool
 
   UserPoolClientId:
     Value:

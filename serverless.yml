@@ -1,6 +1,6 @@
 service: ${self:custom.projectName}-api
 
-frameworkVersion: '2'
+frameworkVersion: "2"
 configValidationMode: error
 useDotenv: true
 
@@ -13,9 +13,7 @@ custom:
   # commands. Or fallsback to what we have set in the provider section.
   stage: ${opt:stage, self:provider.stage}
   # Name of the project, will be used in the service names
-  projectName: myProject
-  # Set the table name here so we can use it while testing locally
-  tableName: tbl-${self:custom.projectName}-${self:custom.stage}
+  projectName: starter
   webpack:
     webpackConfig: ./webpack.config.js
     includeModules: true
@@ -34,70 +32,125 @@ provider:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
     shouldStartNameWithService: true
   stage: dev
-  websocketsApiName: ${self:custom.projectName}-websocket-api
-  websocketsApiRouteSelectionExpression: $request.body.action
   region: us-east-1
   memorySize: 512
   timeout: 3
   environment:
+    RECAPTCHA_V3_KEY: ${env:RECAPTCHA_V3_KEY}
+    RECAPTCHA_V3_SCORE: ${env:RECAPTCHA_V3_SCORE}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    tableName: ${self:custom.tableName}
-    # XXX_KEY: ${env:XXX_KEY} # Defined in .env
+    tableName: !Ref DynamoDBTable
+    S3_BUCKET: !Ref AttachmentsBucket
+    userPoolId: !Ref CognitoUserPoolMainUserPool
+    NewAttachmentTopic: !Ref NewAttachmentTopic
+    NewAvatarTopic: !Ref NewAvatarTopic
   iam:
     role:
       statements:
+        # Permissions for accessing S3
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource:
+            - Fn::Join:
+                - ""
+                - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                  - "/*"
+        # Permissions for accessing cognito user pool
+        - Effect: Allow
+          Action:
+            - cognito-idp:*
+          Resource:
+            - Fn::GetAtt: [ CognitoUserPoolMainUserPool, Arn ]
         # Permissions for accessing DynamoDB
         - Effect: Allow
           Action:
-            - dynamodb:DescribeTable
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
+            - dynamodb:*
           Resource:
             - Fn::GetAtt: [ DynamoDBTable, Arn ]
+            - "*"
+        # Permissions for accessing SNS
         - Effect: Allow
           Action:
-            - dynamodb:Query
-            - dynamodb:Scan
+            - sns:*
           Resource:
-            Fn::Join:
-              - ''
-              -
-                - Fn::GetAtt: [ DynamoDBTable, Arn ]
-                - '/index/*'
+            - !Ref NewAttachmentTopic
+        - Effect: Allow
+          Action:
+            - sns:*
+          Resource:
+            - !Ref NewAvatarTopic
 
 functions:
-  # HTTP Requests
+  # Triggers
+  autoConfirmUser:
+    handler: src/handler/UserHandler.autoConfirmUser
+  moveNewAttachment:
+    handler: src/handler/FileHandler.moveNewAttachment
+    events:
+      - sns:
+          arn: !Ref NewAttachmentTopic
+          topicName: NewAttachmentTopic
+  # Diagnosis
   showEvent:
-    handler: src/handlers/diagnosis.showEvent
+    handler: src/handler/DiagnosisHandler.showEvent
     events:
       - http:
           path: public/event
           method: any
           cors: true
-
+  adminShowEvent:
+    handler: src/handler/DiagnosisHandler.showEvent
+    events:
+      - http:
+          path: admin/event
+          method: any
+          cors: true
+          authorizer: aws_iam
   # WebSocket Requests
   connectionHandler:
-    handler: src/handlers/message.connectionHandler
+    handler: src/handler/MessageHandler.connectionHandler
     events:
       - websocket:
           route: $connect
       - websocket:
           route: $disconnect
   defaultHandler:
-    handler: src/handlers/message.defaultHandler
+    handler: src/handler/MessageHandler.defaultHandler
     events:
       - websocket:
           route: $default
   ping:
-    handler: src/handlers/message.pingHandler
+    handler: src/handler/MessageHandler.ping
     events:
       - websocket:
           route: ping
           routeResponseSelectionExpression: $default
+  # User management
+  rootGetAllAdministrators:
+    handler: src/handler/UserHandler.rootGetAllAdministrators
+    events:
+      - http:
+          path: root/usergroup/admin
+          method: get
+          cors: true
+          authorizer: aws_iam
+  rootAddUserToAdminGroup:
+    handler: src/handler/UserHandler.rootAddUserToAdminGroup
+    events:
+      - http:
+          path: root/usergroup/admin/{username}
+          method: put
+          cors: true
+          authorizer: aws_iam
+  rootRemoveUserFromAdminGroup:
+    handler: src/handler/UserHandler.rootRemoveUserFromAdminGroup
+    events:
+      - http:
+          path: root/usergroup/admin/{username}
+          method: delete
+          cors: true
+          authorizer: aws_iam
 
 resources:
   # API Gateway Errors
@@ -109,3 +162,5 @@ resources:
   # Cognito
   - ${file(resources/cognito-user-pool.yml)}
   - ${file(resources/cognito-identity-pool.yml)}
+  # SNS
+  - ${file(resources/sns-topic.yml)}
