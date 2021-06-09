@@ -35,6 +35,8 @@ This is a pre-configured starter kit for AWS serverless developers.
   - [yarn installation guide](https://classic.yarnpkg.com/en/docs/install)
 - git installed
   - [Installation guide](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- Serverless framework installed
+  - [Installation guide](https://www.serverless.com/framework/docs/getting-started/)
 - AWS Cli installed
   - [Installation guide](https://aws.amazon.com/cli/)
 - access key ID and secret access key of an AWS IAM user with proper permissions
