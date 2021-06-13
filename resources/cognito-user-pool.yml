@@ -22,6 +22,13 @@ Resources:
           RequireSymbols: false
           RequireNumbers: false
           RequireUppercase: false
+      AutoVerifiedAttributes:
+        - email
+      EmailConfiguration:
+        # If you want to use SES, set the EmailSendingAccount to DEVELOPER and paste your SourceArn below
+        EmailSendingAccount: COGNITO_DEFAULT
+        #EmailSendingAccount: DEVELOPER
+        #SourceArn: arn:aws:ses:us-east-1:xxxxxx:identity/xxx@xxx.com
 
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient

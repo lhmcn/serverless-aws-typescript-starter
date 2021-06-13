@@ -18,11 +18,11 @@ This is a pre-configured starter kit for AWS serverless developers.
 
 - S3 bucket for attachment
 
+- SNS
   
 
 **Implemented Serverless Plugins:**
 
-  - serverless-dotenv-plugin (for loading .env configurations)
   - serverless-offline (for running locally)
   - serverless-prune-plugin (for optimizing deployment)
 
