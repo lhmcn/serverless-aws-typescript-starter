@@ -1,0 +1,40 @@
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: your-app-name
+
+configValidationMode: error
+frameworkVersion: "3.39.0"
+
+# Create an optimized package for our functions
+package:
+  individually: true
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+  - serverless-prune-plugin
+
+provider:
+  ${file(serverless_resources/provider.yml)}
+
+functions:
+  - ${file(serverless_resources/functions/diagnosis.yml)}
+  - ${file(serverless_resources/functions/triggers.yml)}
+  - ${file(serverless_resources/functions/user-management.yml)}
+
+resources:
+  # API Gateway Errors
+  - ${file(serverless_resources/api-gateway-errors.yml)}
+  # DynamoDB
+  - ${file(serverless_resources/dynamodb-table.yml)}
+  # Cognito
+  - ${file(serverless_resources/cognito-user-pool.yml)}
+  - ${file(serverless_resources/cognito-identity-pool.yml)}
+  # S3
+  - ${file(serverless_resources/s3-bucket.yml)}
+  # SNS
+  - ${file(serverless_resources/sns-topic.yml)}

@@ -1,0 +1,12 @@
+# package directories
+node_modules
+jspm_packages
+package-lock.json
+
+# Output directories
+.serverless
+.webpack
+.build
+
+.idea
+.env

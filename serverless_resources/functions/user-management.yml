@@ -1,0 +1,40 @@
+rootGetAllAdministrators:
+  handler: src/handler/UserHandler.rootGetAllAdministrators
+  events:
+    - http:
+        method: get
+        path: /root/usergroup/admin
+        cors: true
+        authorizer: aws_iam
+rootAddUserToAdminGroup:
+  handler: src/handler/UserHandler.rootAddUserToAdminGroup
+  events:
+    - http:
+        method: put
+        path: /root/usergroup/admin/{username}
+        cors: true
+        authorizer: aws_iam
+rootRemoveUserFromAdminGroup:
+  handler: src/handler/UserHandler.rootRemoveUserFromAdminGroup
+  events:
+    - http:
+        method: delete
+        path: /root/usergroup/admin/{username}
+        cors: true
+        authorizer: aws_iam
+adminCreateUser:
+  handler: src/handler/UserHandler.createUser
+  events:
+    - http:
+        method: post
+        path: /admin/user
+        cors: true
+        authorizer: aws_iam
+adminListUser:
+  handler: src/handler/UserHandler.listUser
+  events:
+    - http:
+        method: get
+        path: /admin/user
+        cors: true
+        authorizer: aws_iam

@@ -1,0 +1,3 @@
+Resources:
+  NewAttachmentTopic:
+    Type: AWS::SNS::Topic

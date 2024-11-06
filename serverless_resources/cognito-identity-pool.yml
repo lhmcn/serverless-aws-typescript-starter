@@ -1,0 +1,275 @@
+Resources:
+  # The federated identity for our user pool to auth with
+  CognitoIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      # Generate a name based on the stage
+      IdentityPoolName: ${self:service}-identity-pool-${sls:stage}
+      AllowUnauthenticatedIdentities: true
+      # Link to our User Pool
+      CognitoIdentityProviders:
+        - ClientId:
+            Ref: CognitoUserPoolClient
+          ProviderName:
+            Fn::GetAtt: [ 'CognitoUserPoolMainUserPool', 'ProviderName' ]
+
+  # IAM roles
+  CognitoIdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: CognitoIdentityPool
+      Roles:
+        authenticated:
+          Fn::GetAtt: [ CognitoRegisteredRole, Arn ]
+        unauthenticated:
+          Fn::GetAtt: [ CognitoVisitorRole, Arn ]
+
+  # IAM role used for visitors
+  CognitoVisitorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+      Policies:
+        - PolicyName: 'CognitoVisitorPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                Resource: '*'
+
+              # Allow users to download public attachments
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/public/*'
+
+  # IAM role used for registered users
+  CognitoRegisteredRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: 'CognitoAuthorizedPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+
+              # Allow users to invoke user APIs
+              - Effect: 'Allow'
+                Action:
+                  - 'execute-api:Invoke'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:execute-api:'
+                        - Ref: AWS::Region
+                        - ':'
+                        - Ref: AWS::AccountId
+                        - ':'
+                        - Ref: ApiGatewayRestApi
+                        - '/*/*/user/*'
+
+              # Allow users to upload attachments to tmp directory
+              - Effect: 'Allow'
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/public/tmp/*'
+
+              # Allow users to download public attachments
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/public/*'
+
+  # IAM role used for administrators
+  CognitoAdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: 'CognitoAdminPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+
+              # Allow users to invoke user APIs
+              - Effect: 'Allow'
+                Action:
+                  - 'execute-api:Invoke'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:execute-api:'
+                        - Ref: AWS::Region
+                        - ':'
+                        - Ref: AWS::AccountId
+                        - ':'
+                        - Ref: ApiGatewayRestApi
+                        - '/*/*/user/*'
+
+              # Allow users to invoke admin APIs
+              - Effect: 'Allow'
+                Action:
+                  - 'execute-api:Invoke'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:execute-api:'
+                        - Ref: AWS::Region
+                        - ':'
+                        - Ref: AWS::AccountId
+                        - ':'
+                        - Ref: ApiGatewayRestApi
+                        - '/*/*/admin/*'
+
+              # Allow users to upload attachments to tmp directory
+              - Effect: 'Allow'
+                Action:
+                  - 's3:PutObject'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/public/tmp/*'
+
+              # Allow users to download public attachments
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/public/*'
+
+  # IAM role used for root users
+  CognitoRootRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud':
+                  Ref: CognitoIdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: 'CognitoAdminPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+
+              # Allow users to invoke all the APIs
+              - Effect: 'Allow'
+                Action:
+                  - 'execute-api:Invoke'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - 'arn:aws:execute-api:'
+                        - Ref: AWS::Region
+                        - ':'
+                        - Ref: AWS::AccountId
+                        - ':'
+                        - Ref: ApiGatewayRestApi
+                        - '/*'
+
+              # Allow users to access all the files
+              - Effect: 'Allow'
+                Action:
+                  - 's3:*'
+                Resource:
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                        - '/*'
+
+# Print out the Id of the Identity Pool that is created
+Outputs:
+  IdentityPoolId:
+    Value:
+      Ref: CognitoIdentityPool

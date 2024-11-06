@@ -1,0 +1,32 @@
+Resources:
+  AttachmentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # Set the CORS policy
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            MaxAge: 3600
+      # Delete tmp files after 1 day
+      LifecycleConfiguration:
+        Rules:
+          -
+            ExpirationInDays: 1
+            Prefix: 'public/tmp/'
+            Status: Enabled
+
+# Print out the name of the bucket that is created
+Outputs:
+  AttachmentsBucketName:
+    Value:
+      Ref: AttachmentsBucket

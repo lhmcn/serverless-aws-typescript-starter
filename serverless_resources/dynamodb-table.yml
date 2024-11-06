@@ -1,0 +1,42 @@
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+      BillingMode: PAY_PER_REQUEST
+#      ProvisionedThroughput:
+#        ReadCapacityUnits: 5
+#        WriteCapacityUnits: 5
+
+#      GlobalSecondaryIndexes:
+#        - IndexName: GSI-Something
+#          KeySchema:
+#            - AttributeName: someAttribute
+#              KeyType: HASH
+#            - AttributeName: anotherAttribute
+#              KeyType: RANGE
+#          Projection:
+#            ProjectionType: ALL
+#            ProjectionType: KEYS_ONLY
+#            ProjectionType: INCLUDE
+#            NonKeyAttributes:
+#              - someAttribute
+#              - someAttribute
+
+
+# Print out the name of the table that is created
+Outputs:
+  DynamoDBTable:
+    Value:
+      Ref: DynamoDBTable

@@ -1,0 +1,47 @@
+name: aws
+stage: dev
+runtime: nodejs20.x
+region: us-east-1
+memorySize: 512
+timeout: 3
+endpointType: REGIONAL
+lambdaHashingVersion: 20201221
+apiGateway:
+  minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
+  shouldStartNameWithService: true
+environment:
+  AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+  tableName: !Ref DynamoDBTable
+  S3_BUCKET: !Ref AttachmentsBucket
+  userPoolId: !Ref CognitoUserPoolMainUserPool
+  NewAttachmentTopic: !Ref NewAttachmentTopic
+iam:
+  role:
+    statements:
+      # Permissions for accessing S3
+      - Effect: Allow
+        Action:
+          - s3:*
+        Resource:
+          - Fn::Join:
+              - ""
+              - - Fn::GetAtt: [ AttachmentsBucket, Arn ]
+                - "/*"
+      # Permissions for accessing cognito user pool
+      - Effect: Allow
+        Action:
+          - cognito-idp:*
+        Resource:
+          - Fn::GetAtt: [ CognitoUserPoolMainUserPool, Arn ]
+      # Permissions for accessing DynamoDB
+      - Effect: Allow
+        Action:
+          - dynamodb:*
+        Resource:
+          - Fn::GetAtt: [ DynamoDBTable, Arn ]
+      # Permissions for accessing SNS
+      - Effect: Allow
+        Action:
+          - sns:*
+        Resource:
+          - !Ref NewAttachmentTopic

@@ -1,0 +1,22 @@
+showEvent:
+  handler: src/handler/DiagnosisHandler.showEvent
+  events:
+    - http:
+        method: any
+        path: public/event
+        cors: true
+    - http:
+        method: any
+        path: user/event
+        cors: true
+        authorizer: aws_iam
+    - http:
+        method: any
+        path: admin/event
+        cors: true
+        authorizer: aws_iam
+    - http:
+        method: any
+        path: root/event
+        cors: true
+        authorizer: aws_iam

@@ -1,0 +1,8 @@
+autoConfirmUser:
+  handler: src/handler/UserHandler.autoConfirmUser
+moveNewAttachment:
+  handler: src/handler/FileHandler.moveNewAttachment
+  events:
+    - sns:
+        arn: !Ref NewAttachmentTopic
+        topicName: NewAttachmentTopic
