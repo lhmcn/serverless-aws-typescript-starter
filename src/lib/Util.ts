@@ -1,10 +1,9 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import FlakeID from "flake-idgen";
-import format from "biguint-format";
+import { v7 } from "uuid";
 
 export type UserCredential = {
     UserPoolId: string;
-    Username: string;
+    sub: string;
     IdentityId: string;
 };
 
@@ -21,16 +20,16 @@ function getFileExtension(filename: string): string {
 const extractUserCredential = (event: APIGatewayProxyEvent): UserCredential => {
     const credentials: UserCredential = {
         UserPoolId: "",
-        Username: "",
+        sub: "",
         IdentityId: event.requestContext.identity.cognitoIdentityId,
     };
 
     const provider =
         event.requestContext.identity.cognitoAuthenticationProvider;
     if (provider) {
-        const sub = provider.split("/")[2].split(":");
-        credentials.UserPoolId = sub[0];
-        credentials.Username = sub[2];
+        const segments = provider.split("/")[2].split(":");
+        credentials.UserPoolId = segments[0];
+        credentials.sub = segments[2];
     }
 
     return credentials;
@@ -59,13 +58,11 @@ const paginate = (
     return ret;
 };
 
-const flakeID = (): string => {
-    const flakeID = new FlakeID();
-    return format(flakeID.next());
-};
+const generateID = (prefix: string = "", id?: string): string => {
+    if (!id) id = v7();
 
-const generateID = (prefix: string = ""): string =>
-    prefix ? `${prefix}-${flakeID()}` : flakeID();
+    return prefix ? `${prefix}-${id}` : id;
+};
 
 const mapToObject = (value: Map<any, any>): object => {
     const obj = {};
@@ -77,7 +74,6 @@ export default {
     getFileExtension,
     extractUserCredential,
     paginate,
-    flakeID,
     generateID,
     mapToObject,
 };
