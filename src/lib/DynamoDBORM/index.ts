@@ -1,10 +1,6 @@
 import QueryBuilder from "./QueryBuilder";
 import { DynamoDB } from "aws-sdk";
-import QueryResult from "./QueryResult";
-import PageKey from "./PageKey";
 import { DocumentClient } from "aws-sdk/lib/dynamodb/document_client";
-
-export { QueryResult, PageKey };
 
 const db = new DynamoDB.DocumentClient();
 
